@@ -1,9 +1,11 @@
+--Creation of the table
 create table roms (
     romname varchar(20) primary key,
     name varchar(100),
     parent varchar(20), --romname
     board varchar(20),
     year integer,
+    manufacturer varchar(50),
     size integer,
     has_chd boolean,
     sample_set varchar(20), --romname
@@ -14,4 +16,3 @@ create table roms (
     nplayers integer,
     version integer
 );
-

@@ -1,5 +1,6 @@
 #include "GameList.hpp"
 #include "MachineList.hpp"
+#include "Exception.hpp"
 
 #include <string.h>
 #include <stdio.h>
@@ -11,22 +12,23 @@ using namespace pugi;
 void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines){
     
     xml_document doc;
-    xml_parse_result loadOkay = doc.load_file(pFilename);//load
+    xml_parse_result loadOkay = doc.load_file(pFilename);
     if (!loadOkay){
-        printf("Failed to load file: %s\n", loadOkay.description());
-        return;
+        //throw Exception("Failed to load file: %s\n", loadOkay.description());
+        throw Exception(loadOkay.description());
     }
     
     xml_node pParent = doc.document_element();
     if (!pParent){
-        printf("Error in the file.\n");
-        return;
+        throw Exception("Error in the Mame XML file.");
     }
     
     for (xml_node pChild = pParent.first_child(); pChild; pChild = pChild.next_sibling()){
         //Each <game>
-        Game* game = games->new_game();
-        Machine* machine = machines->new_machine();
+        char machine_source[40];
+        char rom_romname[20];
+        char rom_cloneof[20];
+        char rom_sampleof[20];
         
         bool isbios = false;
         bool ignore_game = false;
@@ -40,12 +42,12 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
             switch (nume){
                 case 'n'+26*'a':
                     if (strcmp(attr, "name") == 0) {
-                        game->set_romname(val);
+                        Avulso::strcop(rom_romname, val, 20);
                     }
                     break;
                 case 's'+26*'o':
                     if (strcmp(attr, "sourcefile") == 0) {
-                        machine->set_sourcefile(val);
+                        Avulso::strcop(machine_source, val, 40);
                     }
                     break;
                 case 'i'+26*'s':
@@ -63,7 +65,7 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
                     break;
                 case 'c'+26*'l':
                     if (strcmp(attr, "cloneof") == 0) {
-                        game->set_parent(val);
+                        Avulso::strcop(rom_cloneof, val, 20);
                     }
                     break;
                 case 'r'+26*'o':
@@ -73,13 +75,18 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
                     break;
                 case 's'+26*'a':
                     if (strcmp(attr, "sampleof") == 0) {
-                        game->set_sample_parent(val);
+                        Avulso::strcop(rom_sampleof, val, 20);
                     }
                     break;
             }
         }
         
+        if (isbios) continue;
         if (ignore_game) continue;
+        
+        Game* game = games->new_game(rom_romname);
+        game->set_parent(rom_cloneof);
+        game->set_sample_parent(rom_sampleof);
         
         for (xml_node pdata = pChild.first_child(); pdata; pdata = pdata.next_sibling()){
             //<description>005</description><year>1981</year><manufacturer>Sega</manufacturer><driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
@@ -151,18 +158,19 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
             }
         }
         
-        Machine* inserted = machines->add_machine();
+        Machine* machine = machines->new_machine(machine_source);
         
         if (isbios){
-            if (inserted->get_bios() != NULL){
-                
+            if (machine->get_bios() != NULL){
+                //??
             }
-            inserted->set_bios( game->get_romname() );
+            else {
+                machine->set_bios( game->get_romname() );
+            }
         }
         else{
-            game->set_system(inserted);
-            inserted->add_game(game);
-            games->add_game();
+            game->set_board(machine);
+            machine->add_game(game);
         }
         
     }
@@ -173,14 +181,13 @@ void read_fba_xml(const char* input, GameList* games){
     xml_document doc;
     xml_parse_result loadOkay = doc.load_file(input);
     if (!loadOkay){
-        printf("Failed to load file: %s\n", loadOkay.description());
-        return;
+        //throw Exception("Failed to load file: %s\n", loadOkay.description());
+        throw Exception(loadOkay.description());
     }
     
     xml_node pParent = doc.document_element();
     if (!pParent){
-        printf("Error in the file.\n");
-        return;
+        throw Exception("Error in the FBA XML file.");
     }
     
     for (xml_node pChild = pParent.first_child().next_sibling(); pChild; pChild = pChild.next_sibling()){
@@ -190,11 +197,13 @@ void read_fba_xml(const char* input, GameList* games){
             const char* val = pAttrib.value();
             
             if (strcmp(attr, "name") == 0) {
-                games->set_fba(val, true);
+                Game* game = games->get_game(val);
+                if (game != nullptr){
+                    game->fba(true);
+                }
                 break;
             }
         }
     }
-    
     
 }

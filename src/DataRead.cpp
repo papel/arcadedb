@@ -1,10 +1,11 @@
 #include "GameList.hpp"
 #include "MachineList.hpp"
+#include "Exception.hpp"
 
 #include <stdio.h>
 #include <string.h>
 
-void read_lists1(const char* input, GameList* games, int md){
+static void read_file(const char* input, GameList* games, int md){
     FILE* arq = fopen(input, "r");
     int nl = 0;
     while (nl < 6 && !feof(arq)){
@@ -83,29 +84,35 @@ void read_lists1(const char* input, GameList* games, int md){
             switch(md){
               case 1:
                 if (strlen(rdata) > 0){
-                    games->set_genre(romname, rdata);
-                    games->set_mature(romname, ver == 1);
+                    Game* game = games->get_game(romname);
+                    if (game != nullptr){
+                        game->set_genre(rdata);
+                        game->ismature(ver == 1);
+                    }
                 }
                 break;
-              case 2:
-                games->set_version(romname, ver);
+              case 2:{
+                    Game* game = games->get_game(romname);
+                    if (game != nullptr){
+                        game->set_version(ver);
+                    }
+                }
                 break;
             }
             
         }
         
     }
-    
+    fclose(arq);
 }
 
 
-void read_lists2(const char* input, GameList* games, int md){
+void read_numplayers(const char* input, GameList* games){
     FILE* arq = fopen(input, "r");
     int nl = 0;
-    while (nl < 6 && !feof(arq)){
-        char ch = fgetc(arq);
-        if (ch == '\n') nl++;
-    }
+    
+    Avulso::goto_after(arq, "[NPlayers]");
+    Avulso::goto_after(arq, "\n");
     
     while(true){
         char name[30];
@@ -123,7 +130,9 @@ void read_lists2(const char* input, GameList* games, int md){
         for (int i=0; true; i++){
             char ch = fgetc(arq);
             if (ch == '\r'){
-                i--;
+                info[i] = 0;
+                Avulso::goto_after(arq, "\n");
+                break;
             }
             if (feof(arq) || ch == '\n'){
                 info[i] = 0;
@@ -136,13 +145,9 @@ void read_lists2(const char* input, GameList* games, int md){
             break;
         
         
-        //fprintf(output, "%s %s\n", name, info);
-        //fprintf(output, "update roms set genre = \'%s\' where romname = \'%s\';\n", info, name);
-        
-        
         if (info[0] != '?'){
-            if (strcmp(info, "LaserDisc") == 0 || strcmp(info, "BIOS") == 0
-                || strcmp(info, "Pinball") == 0 || strcmp(info, "Device") == 0
+            if (strncmp(info, "LaserDisc", 9) == 0 || strncmp(info, "BIOS", 4) == 0
+                || strncmp(info, "Pinball", 7) == 0 || strncmp(info, "Device", 6) == 0
             ){
                 
             }
@@ -154,14 +159,24 @@ void read_lists2(const char* input, GameList* games, int md){
                     nump = -nump;
                 }
                 else {
-                    printf("Error: %s %s\n", name, info);
-                    break;
+                    //throw Exception("Error: %s %s\n", name, info);
+                    throw Exception("Error in numplayers.");
                 }
-                games->set_nplayers(name, nump);
+                Game* game = games->get_game(name);
+                if (game != nullptr){
+                    game->set_nplayers(nump);
+                }
             }
         }
         
-        
     }
-    
+    fclose(arq);
+}
+
+
+void read_genre(const char* input, GameList* games){
+    read_file(input, games, 1);
+}
+void read_version(const char* input, GameList* games){
+    read_file(input, games, 2);
 }

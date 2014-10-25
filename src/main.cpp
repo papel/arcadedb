@@ -1,46 +1,50 @@
 #include "SGameList.hpp"
 #include "SMachineList.hpp"
-
-#include "SQLGameList.hpp"
+#include "SQLOutput.hpp"
+#include "FileRead.hpp"
+#include "Exception.hpp"
 
 #include <stdio.h>
-
-void read_mame_xml(const char* input, GameList* games, MachineList* machines);
-void read_fba_xml(const char* input, GameList* games);
-
-void read_lists1(const char* input, GameList* games, int md);
-void read_lists2(const char* input, GameList* games, int md);
 
 
 int main(int argc, char* argv[]){
     if (argc != 6){
-        printf("this_file.exec mame.xml fba.xml Catlist.ini Version.ini nplayers.ini\n");
+        fprintf(stderr, "Invalid input files. The correct arguments are:\n");
+        fprintf(stderr, " %s mamelist.xml fbalist.xml Catlist.ini Version.ini nplayers.ini\n", argv[0]);
         return -1;
     }
     
-    //tabela de bios
-    //cat db.sql | sqlite3 database.db
-    //0 1 sqlite
-    //Lista como hash
-    //Lista binário alfabética com a ordem do mame
-    //Tamanho somando rom
+    //?
+    //size
+    //bios
+    //check crc
     
-    SQLGameList games;
-    SMachineList machines;
-    
-    /*
-    FILE* sourc = execute_mame_xml(argv[1]);
-    if (sourc == NULL)
-        return -1;
-    */
-    
-    read_mame_xml(argv[1], &games, &machines);
-    read_fba_xml(argv[2], &games);
-    read_lists1(argv[3], &games, 1);
-    read_lists1(argv[4], &games, 2);
-    read_lists2(argv[5], &games, 1);
-    
-    //
+    try {
+        SGameList games(50000);
+        SMachineList machines;
+        SQLOutput outp;
+        
+        fprintf(stderr, "Reading: %s\n", argv[1]);
+        read_mame_xml(argv[1], &games, &machines);
+        
+        fprintf(stderr, "Reading: %s\n", argv[2]);
+        read_fba_xml(argv[2], &games);
+        
+        fprintf(stderr, "Reading: %s\n", argv[3]);
+        read_genre(argv[3], &games);
+        
+        fprintf(stderr, "Reading: %s\n", argv[4]);
+        read_version(argv[4], &games);
+        
+        fprintf(stderr, "Reading: %s\n", argv[5]);
+        read_numplayers(argv[5], &games);
+        
+        fprintf(stderr, "Output: ...\n" );
+        outp.output(stdout, &games);
+    }
+    catch (Exception& e){
+        fprintf(stderr, "%s\n", e.get_message());
+    }
     
     return 0;
 }

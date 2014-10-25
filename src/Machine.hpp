@@ -1,5 +1,4 @@
-#ifndef __MACHINE__HEADER__
-#define __MACHINE__HEADER__
+#pragma once
 
 #include "Avulso.hpp"
 
@@ -67,5 +66,3 @@ class Machine {
     void add_game(Game* game);
     
 };
-
-#endif
