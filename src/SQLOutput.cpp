@@ -4,12 +4,6 @@
 #include <string.h>
 #include <memory>
 
-static const char* getOrNull(const char* str){
-    if (str == nullptr){
-        return "null";
-    }
-    return str;
-}
 static const char* setBool(bool boo){
     /*
     if (boo){
@@ -43,19 +37,37 @@ static void escapeString(char* dest, const char* src){
     }
     *dest = *src;
 }
+static void getOrNull(char* dest, const char* src){
+    if (src == nullptr){
+        strcpy(dest, "null");
+    }
+    else {
+        strcpy(dest, "'");
+        strcat(dest, src);
+        strcat(dest, "'");
+    }
+}
 
 static void print_game(FILE* output, Game& game){
     char name[110];
     escapeString(name, game.get_name());
     char manufacturer[60];
-    escapeString(manufacturer, getOrNull( game.get_manufacturer() ));
+    escapeString(manufacturer, game.get_manufacturer() );
+    
+    char parent[22];
+    getOrNull(parent, game.get_parent() );
+    char sample_parent[22];
+    getOrNull(sample_parent, game.get_sample_parent() );
+    char genre[40];
+    getOrNull(genre, game.get_genre() );
+
     
     fprintf(output, 
-        "insert into roms values('%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, %d);\n",
+        "insert into roms values('%s', '%s', %s, '%s', %d, '%s', %d, '%s', %s, '%s', '%s', %s, '%s', %d, %d);\n",
         
         game.get_romname(),
         name,
-        getOrNull( game.get_parent() ),
+        parent,
         game.get_board()->get_sourcefile(),
         
         game.get_year(),//int
@@ -63,10 +75,10 @@ static void print_game(FILE* output, Game& game){
         game.get_size(),//int
         setBool( game.get_chd() != nullptr ),
         
-        getOrNull( game.get_sample_parent() ),
+        sample_parent,
         setBool( game.works() ),
         setBool( game.fba() ),
-        getOrNull( game.get_genre() ),
+        genre,
         
         setBool( game.ismature() ),
         game.get_nplayers(),//int
@@ -82,7 +94,7 @@ void SQLOutput::output(FILE* output, GameList* games){
         Game& game = it->getNext();
         
         //Skip fruit machines
-        if ( strcmp( getOrNull( game.get_genre() ), "Fruit Machines" ) == 0 ) continue;
+        if ( game.get_genre() != nullptr && strcmp( game.get_genre(), "Fruit Machines" ) == 0 ) continue;
         
         print_game(output, game);
     }

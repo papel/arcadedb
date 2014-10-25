@@ -1,6 +1,10 @@
 #include "Machine.hpp"
 #include "Game.hpp"
 
+Machine::~Machine(){
+    if (bios) delete bios;
+}
+
 void Machine::add_game(Game* game){
     short year = game->get_year();
     bool works = game->works();

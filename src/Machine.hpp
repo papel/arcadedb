@@ -3,13 +3,14 @@
 #include "Avulso.hpp"
 
 class Game;
+typedef Game Bios;
 
 class Machine {
-    char name[40];
     char sourcefile[20];
+    char name[40];
     short first_year;
     short last_year;
-    char bios[20];
+    Bios* bios;
     int working_games;
     int number_games;
     
@@ -17,12 +18,14 @@ class Machine {
     Machine(){
         reset();
     }
+    ~Machine();
+    
     void reset(){
-        name[0] = 0;
         sourcefile[0] = 0;
+        name[0] = 0;
         first_year = 0;
         last_year = 0;
-        bios[0] = 0;
+        bios = nullptr;
         working_games = 0;
         number_games = 0;
     }
@@ -40,11 +43,10 @@ class Machine {
         return sourcefile;
     }
     
-    void set_bios(const char* nam){
-        Avulso::strcop(bios, nam, 20);
+    void set_bios(Bios* nam){
+        bios = nam;
     }
-    const char* get_bios() const{
-        if (bios[0] == 0) return NULL;
+    Bios* get_bios() const{
         return bios;
     }
     

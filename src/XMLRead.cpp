@@ -29,6 +29,8 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
         char rom_romname[20];
         char rom_cloneof[20];
         char rom_sampleof[20];
+        rom_cloneof[0] = 0;
+        rom_sampleof[0] = 0;
         
         bool isbios = false;
         bool ignore_game = false;
@@ -81,12 +83,22 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
             }
         }
         
-        if (isbios) continue;
         if (ignore_game) continue;
         
-        Game* game = games->new_game(rom_romname);
-        game->set_parent(rom_cloneof);
-        game->set_sample_parent(rom_sampleof);
+        
+        Game* game;
+        if (isbios){
+            game = new Game;
+            game->set_romname(rom_romname);
+        }
+        else {
+            game = games->new_game(rom_romname);
+        }
+        if (rom_cloneof[0] != 0)
+            game->set_parent(rom_cloneof);
+        if (rom_sampleof[0] != 0)
+            game->set_sample_parent(rom_sampleof);
+        
         
         for (xml_node pdata = pChild.first_child(); pdata; pdata = pdata.next_sibling()){
             //<description>005</description><year>1981</year><manufacturer>Sega</manufacturer><driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
@@ -159,17 +171,23 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
         }
         
         Machine* machine = machines->new_machine(machine_source);
+        game->set_board(machine);
         
         if (isbios){
-            if (machine->get_bios() != NULL){
-                //??
+            if (game->get_parent() == nullptr) {
+                if (machine->get_bios() == nullptr){
+                    machine->set_bios( (Bios*)game );
+                }
+                else {
+                    //??
+                    delete game;
+                }
             }
             else {
-                machine->set_bios( game->get_romname() );
+                delete game;
             }
         }
-        else{
-            game->set_board(machine);
+        else {
             machine->add_game(game);
         }
         

@@ -50,24 +50,3 @@ Iterator<Machine>* SMachineList::new_iterator(){
     MIterator b = table.end();
     return new WIterator<Machine, MIterator>(a, b);
 }
-
-
-
-
-void SMachineList::print(){
-    for (MIterator it = table.begin(), end = table.end(); it != end; it++){
-        Machine& ma = *(Machine*)&(*it);
-        const char* bios = ma.get_bios();
-        printf("%s (%s) | %d | %d (%d)\n", ma.get_sourcefile(), (bios!=NULL)? bios : "-",  ma.get_first_year(), ma.get_number_games(), ma.get_working_rate() );
-        
-    }
-    
-    //create table boards (sourcefile varchar(20) primary key, name varchar(80), first_year integer, last_year integer);
-    for (MIterator it = table.begin(), end = table.end(); it != end; it++){
-        Machine& ma = *(Machine*)&(*it);
-        const char* bios = ma.get_bios();
-        printf("insert into boards values (\'%s\', NULL, NULL);\n", ma.get_sourcefile() );
-    }
-    
-}
-

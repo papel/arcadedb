@@ -21,7 +21,5 @@ class SMachineList : public MachineList{
     Machine* get_machine(const char* name);
     Iterator<Machine>* new_iterator();
     
-    void print();
-    
     ~SMachineList(){}
 };
