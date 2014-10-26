@@ -93,8 +93,11 @@ void SQLOutput::output(FILE* output, GameList* games){
     while ( it->hasNext() ){
         Game& game = it->getNext();
         
-        //Skip fruit machines
-        if ( game.get_genre() != nullptr && strcmp( game.get_genre(), "Fruit Machines" ) == 0 ) continue;
+        //Skip garbage
+        const char* genr = game.get_genre();
+        if (genr != nullptr ){
+            if (strcmp( genr, "Fruit Machines" ) == 0 || strcmp( genr, "System / BIOS" ) == 0) continue;
+        }
         
         print_game(output, game);
     }

@@ -3,7 +3,7 @@
 ----------------------------------------
 select
     board,
-    coalesce(sum(size)/1000, 0) as size,
+    coalesce(sum(size)/1000, 0) as total_size,
     cast(coalesce(avg(size), 0) as integer) as avg,
     min(case when year > 1950 then year end) as first_year,
     max(case when year > 1950 then year end) as last_year,
@@ -11,21 +11,27 @@ select
     100*cast(count(case when works then 1 end) as float)/count(*) as working
 from roms where parent is null
 group by board
---having min(year) >= 1994
---having avg(size) > 10000000
+--having first_year >= 1994
+--having avg > 10000000
 order by board;
---order by coalesce(sum(size), 0) desc;
---order by coalesce(avg(size), 0) desc;
---order by min(year);
+--order by total_size desc;
+--order by avg desc;
+--order by first_year;
 
 
 --List of working boards
 ----------------------------------------
-select board, count(case when has_chd then 1 end), count(*), 100*cast(count(case when works then 1 end) as float)/count(*) as working, min(year)
+select
+    board,
+    count(*) as quant,
+    100*cast(count(case when works then 1 end) as float)/count(*) as working,
+    sum(size)/1000 as total_size,
+    count(case when has_chd then 1 end) as has_chd,
+    min(year) as year
 from roms
 where parent is null
 group by board
-having 100*cast(count(case when works then 1 end) as float)/count(*) >= 5;
+having working >= 5;
 
 
 --List of genres
@@ -51,7 +57,7 @@ where parent is null and sample_parent is not null;
 --List of bootlegs that are not clones
 ----------------------------------------
 select * from roms
-where parent is null and name like '%bootleg%';
+where parent is null and (name like '%bootleg%' or manufacturer like '%bootleg%');
 
 
 --Multiplayer games whose parent is not multiplayer
@@ -62,6 +68,7 @@ where parent is not null and nplayers is not null and nplayers != 1 and exists (
 );
 
 
+--The board that has the largest number of roms
 ----------------------------------------
 select board, count(*) from roms
 group by board
@@ -100,12 +107,15 @@ from roms where parent is null and not has_chd and (
         having cast(100 as float)*count(case when works then 1 end)/count(*) < 5
     )
 )
+--BOARD
 and board not in (
---New and does not work
+--Large and does not work
 'pgm2',
---Cave CV1000
 
---Good systems with alternative download
+--Large and works
+'cv1k',
+
+--Good systems with alternative source (3D and does not work)
 'triforce', --Dolphin (Mario Kart GP 2)
 'naomi', --naomi + atomiswave (see list)
 
@@ -114,19 +124,22 @@ and board not in (
 'model1', --Early 3D
 'model2', --Nebula
 'model3', --Supermodel
-'zn', --Zinc, (include Taito FX), PS1
+'zn', --Zinc, (includes Taito FX), PS1
 'stv', --Saturn
 'cps3', --FBA version
 'kinst', --N64
 'midzeus', --N64
+'taitotz', --PC
 
---Ignored systems
-'namcos10', --Bad
+--Ignored systems (3D and does not work)
+--Namco 3D
+'namcos10',
 'namcos21', --Early 3D
 'namcos22',
 'namcos23',
+'namcops2', --PS2
 
-'ksys573', --PS1
+--Konami 3D
 'konamigq', --PS1
 'konamigv', --PS1
 'konamim2',
@@ -136,50 +149,54 @@ and board not in (
 'gticlub',
 'hornet',
 'pyson', --PS2
+
+--Konami Bemani
+'ksys573', --PS1
 'twinkle', --PS1
 'djmain',
 'firebeat',
---Konami Bemani
 
+--Taito 3D
+'taitotz',
 'taitogn', --PS1
 'taitowlf', --PC, DC version
 'taitojc',
 'taitopjc',
-'taitotz', --PC
---Scorpion
 
+--Other Notable 3D
 'atarigt',
 'atarifb',
-'3do',
 'mediagx', --PC
 'vegas', --Midway/Atari Vegas
 'seattle', --Driver for Atari/Midway Phoenix/Seattle/Flagstaff
---Atari Cojag, Atari Denver
-
 'midqslvr', --PC
 'midvunit',
 'midxunit',
 'atlantis',
---Midway Zeus II, Graphite (PC)
+'seibuspi',
+'3do',
+'hng64',
 
+--Other 3D
 'eolith',
 'ghosteo',
 'gaelco3d',
 'itech32',
 'seta2',
 'tetrisp2',
---seibu spi
-
---Ignored systems, mostly 3D
+'nexus3d', --Examu AH1
 'aleck64', --N64
-'namcops2', --PS2
-'nexus3d', --AH1
 'hikaru',
 'chihiro',
-'hng64',
 'atvtrack',
 'coolridr',
 'magictg',
+
+--Bootleg
+'multigam', 'famibox', --NES
+'snesb', 'sfcbox',
+'tourvis', --PC Engine
+'megadrvb',
 
 --Repetition
 '39in1',
@@ -198,6 +215,12 @@ and board not in (
 '')
 and not( board like 'mpu4%')
 
+--ROMNAME
+and romname not in (
+    select romname from roms
+    where genre = 'Multiplay' and
+    (name like '%bootleg%' or manufacturer like '%bootleg%')
+)
 and romname not in (
 'ms5pcb', --pseudo-clone of mslug5
 'svcpcb', --pseudo-clone of svc
@@ -217,20 +240,20 @@ and romname not in (
 'vf4', 'vf4cart', 'vf4evo', --vf4evoct: "Virtua Fighter 4 Evolution (Cartridge)", vf4tuned: "Virtua Fighter 4 Final Tuned"
 '')
 
+--GENRE
 and genre not in(
 'Fruit Machines',
 'Casino',
+'System / BIOS',
 '') and not (genre like 'Quiz%')
 ;
---'multigam', 'famibox', --NES
---'snesb', 'sfcbox',
---'tourvis', --PC Engine
---'megadrvb'
 
 
 --Good roms that were excluded with the filter
 ----------------------------------------
-select romname from roms
+select romname
+--select count(*), sum(size)
+from roms
 where romname in (
 --STV
 'prikura', --Princess Clara Daisakusen
@@ -283,7 +306,7 @@ where romname in (
 'ggx15', --Guilty Gear X Plus 1.5
 --Samurai Shodown VI (200)(samsptk)
 --The King Of Fighters XI (230)(kofxi)
---Neo-Geo Battle Coliseum ()(ngbc)--300
+--Neo-Geo Battle Coliseum (300)(ngbc)
 
 --CPS3
 'sfiii3', --CHD
