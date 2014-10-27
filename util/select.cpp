@@ -24,20 +24,34 @@ struct Hash{
     }
 };
 
+
+void gotostr(FILE* arq, const char* str){
+    int x = 0;
+    while (x < strlen(str) && !feof(arq)){
+        char ch = fgetc(arq);
+        if (ch == str[x]){
+            x++;
+        }
+        else {
+            x = 0;
+        }
+    }
+}
+
 int main(int argc, char* argv[]){
-    
-    //torrent list
-    //torrent resume
-    //selected ones
+    if (argc != 4){
+    input_error:;
+        fprintf(stderr, "Invalid input files. The correct arguments are:\n");
+        fprintf(stderr, " %s tlist tresume tselect\n", argv[0]);
+        return -1;
+        
+    }
     
     FILE* tlist = fopen(argv[1], "r");
     FILE* tresume = fopen(argv[2], "r+");
     FILE* tselect = fopen(argv[3], "r");
     
-    if (tlist == NULL || tresume == NULL || tselect == NULL){
-        printf("Erro abrir arquivo\n");
-        return -1;
-    }
+    if (tlist == NULL || tresume == NULL || tselect == NULL) goto input_error;
     
     //Tabela de escolhidos
     std::unordered_set<Name, Hash, Comp> table;
@@ -56,31 +70,31 @@ int main(int argc, char* argv[]){
         table.insert(str);
         
     }
+    fclose(tselect);
     
-    //ir até arquivo "dndl"
-    int x = 0;
-    const char* str = "dndl";
-    while (x < 4){
-        char ch = fgetc(tresume);
-        if (ch == str[x]){
-            x++;
-        }
-        else {
-            x = 0;
-        }
-    }
+    
+    //tresume ready
+    gotostr(tresume, "dndl");
+    
+    gotostr(tlist, "filesld6:");
+    
     
     unsigned long long tsize = 0;
-    
     while(true){
         char ch;
         
-        //lengthi
         for (int i=0; i<7; i++){
-            fgetc(tlist);
+            ch = fgetc(tlist);
+            if(i == 0 && ch == 'n'){
+                //name4:
+                break;
+            }
         }
         if (feof(tlist))
             break;
+        if (ch == 'n')
+            break;
+        
         
         char length[20];
         for (int i=0; true; i++){
@@ -118,7 +132,7 @@ int main(int argc, char* argv[]){
         if (feof(tlist))
             break;
         
-        std::unordered_set<Name>::iterator it = table.find(name);
+        std::unordered_set<Name, Hash, Comp>::iterator it = table.find(name);
         unsigned char ma = '0';
         if (it != table.end()){
             ma = '1';
@@ -132,6 +146,6 @@ int main(int argc, char* argv[]){
     
     fclose(tlist);
     fclose(tresume);
-    fclose(tselect);
+
     
 }

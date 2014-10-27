@@ -1,6 +1,7 @@
 
 --List of boards
 ----------------------------------------
+create view board as
 select
     board,
     coalesce(sum(size)/1000, 0) as total_size,
@@ -36,6 +37,7 @@ having working >= 5;
 
 --List of genres
 ----------------------------------------
+create view genre as
 select genre, count(*), sum(size)/1000 from roms
 where parent is null group by genre order by genre;
 
@@ -51,7 +53,7 @@ where works and parent in (
 --Requires samples
 ----------------------------------------
 select * from roms
-where parent is null and sample_parent is not null;
+where parent is null and sample_set is not null;
 
 
 --List of bootlegs that are not clones
