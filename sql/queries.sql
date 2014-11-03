@@ -1,43 +1,30 @@
 
 --List of boards
 ----------------------------------------
-create view board as
 select
     board,
     coalesce(sum(size)/1000, 0) as total_size,
     cast(coalesce(avg(size), 0) as integer) as avg,
+    count(*) as num_games,
     min(case when year > 1950 then year end) as first_year,
     max(case when year > 1950 then year end) as last_year,
-    count(*) as num_games,
-    100*cast(count(case when works then 1 end) as float)/count(*) as working
+    100*cast(sum(case when works then 1 else 0 end) as float)/count(*) as working,
+    --bool_or(fba) as fba
+    max(case when fba then 1 else 0 end) as fba
+    max(case when has_chd then 1 else 0 end) as haschd
 from roms where parent is null
 group by board
 --having first_year >= 1994
 --having avg > 10000000
+--having working >= 5
 order by board;
 --order by total_size desc;
 --order by avg desc;
 --order by first_year;
 
 
---List of working boards
-----------------------------------------
-select
-    board,
-    count(*) as quant,
-    100*cast(count(case when works then 1 end) as float)/count(*) as working,
-    sum(size)/1000 as total_size,
-    count(case when has_chd then 1 end) as has_chd,
-    min(year) as year
-from roms
-where parent is null
-group by board
-having working >= 5;
-
-
 --List of genres
 ----------------------------------------
-create view genre as
 select genre, count(*), sum(size)/1000 from roms
 where parent is null group by genre order by genre;
 
@@ -86,7 +73,7 @@ having count(*) = (
 with thing as(
     select
         board,
-        100*cast(count(case when works then 1 end) as float)/count(*) as ratio
+        100*cast(sum(case when works then 1 else 0 end) as float)/count(*) as ratio
     from roms
     group by board
 )
@@ -101,22 +88,17 @@ order by ratio desc;
 ----------------------------------------
 select romname
 --select count(*), sum(size)
-from roms where parent is null and not has_chd and (
+from roms where parent is null and not has_chd
+and (
     fba or
     board not in (
         select board from roms
         group by board
-        having cast(100 as float)*count(case when works then 1 end)/count(*) < 5
+        having cast(100 as float)*sum(case when works then 1 else 0 end)/count(*) < 5
     )
 )
 --BOARD
 and board not in (
---Large and does not work
-'pgm2',
-
---Large and works
-'cv1k',
-
 --Good systems with alternative source (3D and does not work)
 'triforce', --Dolphin (Mario Kart GP 2)
 'naomi', --naomi + atomiswave (see list)
@@ -167,7 +149,6 @@ and board not in (
 
 --Other Notable 3D
 'atarigt',
-'atarifb',
 'mediagx', --PC
 'vegas', --Midway/Atari Vegas
 'seattle', --Driver for Atari/Midway Phoenix/Seattle/Flagstaff
@@ -175,12 +156,10 @@ and board not in (
 'midvunit',
 'midxunit',
 'atlantis',
-'seibuspi',
 '3do',
 'hng64',
 
 --Other 3D
-'eolith',
 'ghosteo',
 'gaelco3d',
 'itech32',
@@ -194,11 +173,12 @@ and board not in (
 'coolridr',
 'magictg',
 
+
 --Bootleg
 'multigam', 'famibox', --NES
-'snesb', 'sfcbox',
+'snesb', 'sfcbox', 'nss', --SNES
 'tourvis', --PC Engine
-'megadrvb',
+'megadrvb', --SMD
 
 --Repetition
 '39in1',
@@ -214,6 +194,7 @@ and board not in (
 'meritm',
 'amaticmg',
 'pcat_nit',
+'peplus',
 '')
 and not( board like 'mpu4%')
 
@@ -224,16 +205,21 @@ and romname not in (
     (name like '%bootleg%' or manufacturer like '%bootleg%')
 )
 and romname not in (
-'ms5pcb', --pseudo-clone of mslug5
-'svcpcb', --pseudo-clone of svc
-'kf2k3pcb', --pseudo-clone of kof2003
-'samsho5', --pseudo-clone of samsh5sp
-'kbash2', --Clone and bootleg of kbash (Knuckle Bash)
-'mstworld', --Clone and bootleg of spang (Super Pang)
-'beastrzb', --Clone and bootleg of beastrzr (Beastorizer (USA) ) - Blood Roar
+--pseudo-clones
+'ms5pcb', --mslug5
+'svcpcb', --svc
+'kf2k3pcb', --kof2003
+'samsho5', --samsh5sp
 'kov', --kovplus
 'kov2', --kov2p
 'kovsh', --kovshp
+'ibara', --ibarablk
+'futari15', --futaribl
+'deathsml', --dsmbl
+
+'kbash2', --Clone and bootleg of kbash (Knuckle Bash)
+'mstworld', --Clone and bootleg of spang (Super Pang)
+'beastrzb', --Clone and bootleg of beastrzr (Beastorizer (USA) ) - Blood Roar
 
 --Naomi
 'slasho', --slashout: "Slashout"
@@ -244,9 +230,10 @@ and romname not in (
 
 --GENRE
 and genre not in(
+'System / BIOS',
 'Fruit Machines',
 'Casino',
-'System / BIOS',
+'Tabletop / Mahjong',
 '') and not (genre like 'Quiz%')
 ;
 
@@ -282,8 +269,10 @@ where romname in (
 --OTHER
 'gradius4',
 'slrasslt',
-'salmndr2',
-'dragoona',
+'bballoon',
+'grdians',
+'gundamex',
+'penbros',
 
 --NAOMI
 'zerogu2', --Zero Gunner 2 (40)

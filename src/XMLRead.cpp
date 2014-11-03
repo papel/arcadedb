@@ -33,6 +33,7 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
         rom_sampleof[0] = 0;
         
         bool isbios = false;
+        bool isdevice = false;
         bool ignore_game = false;
         
         for ( xml_attribute pAttrib = pChild.first_attribute(); pAttrib; pAttrib = pAttrib.next_attribute() ){
@@ -58,10 +59,14 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
                             isbios = true;
                         }
                     }
-                    else if (strcmp(attr, "ismechanical") == 0 || strcmp(attr, "isdevice") == 0) {
+                    else if (strcmp(attr, "ismechanical") == 0) {
                         if (strcmp(val, "yes") == 0) {
                             ignore_game = true;
-                            break;
+                        }
+                    }
+                    else if (strcmp(attr, "isdevice") == 0) {
+                        if (strcmp(val, "yes") == 0) {
+                            isdevice = true;
                         }
                     }
                     break;
@@ -87,7 +92,7 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
         
         
         Game* game;
-        if (isbios){
+        if (isbios || isdevice){
             game = new Game;
             game->set_romname(rom_romname);
         }
@@ -99,6 +104,19 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
         if (rom_sampleof[0] != 0)
             game->set_sample_parent(rom_sampleof);
         
+        if (isdevice){
+            for (xml_node pdata = pChild.first_child(); pdata; pdata = pdata.next_sibling()){
+                const char* elem = pdata.name();
+                if (strcmp(elem, "rom") == 0){
+                    //printf("%s\n", game->get_romname() );
+                    
+                    
+                    break;
+                }
+            }
+            delete game;
+            continue;
+        }
         
         for (xml_node pdata = pChild.first_child(); pdata; pdata = pdata.next_sibling()){
             //<description>005</description><year>1981</year><manufacturer>Sega</manufacturer><driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>

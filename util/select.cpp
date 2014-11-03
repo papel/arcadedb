@@ -65,16 +65,15 @@ int main(int argc, char* argv[]){
             }
             str.romname[i] = ch;
         }
-        if (feof(tselect) || str.romname[0] == 0) break;
-        
-        table.insert(str);
-        
+        if (str.romname[0] != 0){
+            table.insert(str);
+        }
     }
     fclose(tselect);
     
     
     //tresume ready
-    gotostr(tresume, "dndl");
+    gotostr(tresume, ":dndl");
     
     gotostr(tlist, "filesld6:");
     
@@ -133,9 +132,9 @@ int main(int argc, char* argv[]){
             break;
         
         std::unordered_set<Name, Hash, Comp>::iterator it = table.find(name);
-        unsigned char ma = '0';
+        unsigned char ma = '1';
         if (it != table.end()){
-            ma = '1';
+            ma = '0';
             tsize += size;
         }
         fgetc(tresume);//i
