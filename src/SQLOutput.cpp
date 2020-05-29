@@ -59,7 +59,7 @@ static void print_game(FILE* output, Game& game){
     getOrNull(parent, game.get_parent() );
     char sample_parent[22];
     getOrNull(sample_parent, game.get_sample_parent() );
-    char genre[40];
+    char genre[100];
     getOrNull(genre, game.get_genre() );
 
     

@@ -229,12 +229,11 @@ and romname not in (
 '')
 
 --GENRE
+and genre not like 'Casino%'
+and genre not like 'Quiz%'
 and genre not in(
-'System / BIOS',
-'Fruit Machines',
-'Casino',
 'Tabletop / Mahjong',
-'') and not (genre like 'Quiz%')
+'')
 ;
 
 

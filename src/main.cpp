@@ -23,7 +23,7 @@ int main(int argc, char* argv[]){
         read_mame_xml(argv[1], &games, &machines);
         
         fprintf(stderr, "Reading: %s\n", argv[2]);
-        read_fba_xml(argv[2], &games);
+//        read_fba_xml(argv[2], &games);
         
         fprintf(stderr, "Reading: %s\n", argv[3]);
         read_genre(argv[3], &games);
