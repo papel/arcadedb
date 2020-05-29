@@ -29,11 +29,19 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
         char rom_romname[20];
         char rom_cloneof[20];
         char rom_sampleof[20];
+        char rom_gamename[100];
+        char rom_manufacturer[100];
+        char rom_chd[20];
+        short rom_year = 0;
+        uint64_t rom_size = 0;
+        bool status = false; //good|imperfect|preliminary
+        
         rom_cloneof[0] = 0;
         rom_sampleof[0] = 0;
+        machine_source[0] = 0;
+        rom_chd[0] = 0;
         
         bool isbios = false;
-        bool isdevice = false;
         bool ignore_game = false;
         
         for ( xml_attribute pAttrib = pChild.first_attribute(); pAttrib; pAttrib = pAttrib.next_attribute() ){
@@ -51,6 +59,13 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
                 case 's'+26*'o':
                     if (strcmp(attr, "sourcefile") == 0) {
                         Avulso::strcop(machine_source, val, 40);
+                        int siz = strlen(machine_source);
+                        if (machine_source[siz-2] == '.' && machine_source[siz-1] == 'c' ){
+                            machine_source[siz-2] = 0;
+                        }
+                        else if (machine_source[siz-4] == '.' && machine_source[siz-3] == 'c' && machine_source[siz-2] == 'p' ){
+                            machine_source[siz-4] = 0;
+                        }
                     }
                     break;
                 case 'i'+26*'s':
@@ -66,7 +81,7 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
                     }
                     else if (strcmp(attr, "isdevice") == 0) {
                         if (strcmp(val, "yes") == 0) {
-                            isdevice = true;
+                            ignore_game = true;
                         }
                     }
                     break;
@@ -91,33 +106,6 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
         if (ignore_game) continue;
         
         
-        Game* game;
-        if (isbios || isdevice){
-            game = new Game;
-            game->set_romname(rom_romname);
-        }
-        else {
-            game = games->new_game(rom_romname);
-        }
-        if (rom_cloneof[0] != 0)
-            game->set_parent(rom_cloneof);
-        if (rom_sampleof[0] != 0)
-            game->set_sample_parent(rom_sampleof);
-        
-        if (isdevice){
-            for (xml_node pdata = pChild.first_child(); pdata; pdata = pdata.next_sibling()){
-                const char* elem = pdata.name();
-                if (strcmp(elem, "rom") == 0){
-                    //printf("%s\n", game->get_romname() );
-                    
-                    
-                    break;
-                }
-            }
-            delete game;
-            continue;
-        }
-        
         for (xml_node pdata = pChild.first_child(); pdata; pdata = pdata.next_sibling()){
             //<description>005</description><year>1981</year><manufacturer>Sega</manufacturer><driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
             
@@ -128,42 +116,39 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
                 case 'd'+26*'e':
                     if (strcmp(elem, "description") == 0) {
                         const char* val = pdata.child_value();
-                        game->set_name(val);
+                        Avulso::strcop(rom_gamename, val, 100);
                     }
                     break;
                 case 'y'+26*'e':
                     if (strcmp(elem, "year") == 0) {
                         const char* val = pdata.child_value();
-                        int year = 0;
-                        sscanf(val, "%d", &year );
-                        game->set_year((short)year);
+                        int temp = 0;
+                        sscanf(val, "%d", &temp );
+                        rom_year = (short)temp;
                     }
                     break;
                 case 'm'+26*'a':
                     if (strcmp(elem, "manufacturer") == 0) {
                         const char* val = pdata.child_value();
-                        game->set_manufacturer(val);
+                        Avulso::strcop(rom_manufacturer, val, 100);
                     }
                     break;
                 case 'd'+26*'r':
                     if (strcmp(elem, "driver") == 0) {
-                        bool status = false; //good|imperfect|preliminary
                         for ( xml_attribute pAttrib = pdata.first_attribute(); pAttrib; pAttrib = pAttrib.next_attribute() ){
-                            
                             const char* attr = pAttrib.name();
                             const char* val = pAttrib.value();
-                            
                             if (strcmp(attr, "emulation") == 0 && strcmp(val, "good") == 0){
                                 status = true;
                                 break;
                             }
                         }
-                        game->works(status);
                     }
                     break;
                 case 'd'+26*'i':
                     if (strcmp(elem, "disk") == 0) {
-                        game->set_chd("true");
+                        const char* val = pdata.child_value();
+                        Avulso::strcop(rom_chd, val, 20);
                     }
                     break;
                 case 's'+26*'a':
@@ -179,14 +164,51 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
                             const char* val = pAttrib.value();
                             
                             if (strcmp(attr, "size") == 0){
-                                
+                                uint64_t tsize = 0;
+                                sscanf(val, "%llu", &tsize );
+                                rom_size += tsize;
                             }
                         }
                         
                     }
                     break;
+                case 's'+26*'o':
+                    if (strcmp(elem, "softwarelist") == 0) {
+                        //Mess stuff
+                        ignore_game = true;
+                    }
+                    break;
+            }
+            if (ignore_game){
+                break;
             }
         }
+        if (ignore_game){
+            continue;
+        }
+        
+        Game* game;
+        if (isbios){
+            game = new Game;
+            game->set_romname(rom_romname);
+        }
+        else {
+            game = games->new_game(rom_romname);
+        }
+        
+        if (rom_cloneof[0] != 0)
+            game->set_parent(rom_cloneof);
+        if (rom_sampleof[0] != 0)
+            game->set_sample_parent(rom_sampleof);
+        if (rom_chd[0] != 0)
+            game->set_chd(rom_chd);
+        
+        game->set_name(rom_gamename);
+        game->set_year(rom_year);
+        game->set_manufacturer(rom_manufacturer);
+        game->works(status);
+        game->set_size(rom_size);
+
         
         Machine* machine = machines->new_machine(machine_source);
         game->set_board(machine);
@@ -197,7 +219,6 @@ void read_mame_xml(const char* pFilename, GameList* games, MachineList* machines
                     machine->set_bios( (Bios*)game );
                 }
                 else {
-                    //??
                     delete game;
                 }
             }

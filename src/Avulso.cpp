@@ -3,13 +3,16 @@
 
 namespace Avulso {
     
-    void strcop(char* dest, const char* orig, int size){
+    void strcop(char* dest, const char* orig, size_t size){
         int i = 0;
         do {
             dest[i] = orig[i];
             i++;
         } while (i < size && orig[i-1] != 0);
         dest[size-1] = 0;
+    }
+    bool str_starts(const char *str, const char *pre){
+        return strncmp(pre, str, strlen(pre)) == 0;
     }
     
     void goto_after(FILE* arq, const char* str){
@@ -24,6 +27,23 @@ namespace Avulso {
                 x = 0;
             }
         }
+    }
+    
+    void read_until(FILE* arq, char* dest, size_t size, char stop){
+        size--;
+        for (int i=0; i<size; ){
+            char ch = fgetc(arq);
+            if (feof(arq) || ch == stop){
+                dest[i] = 0;
+                return;
+            }
+            if (ch == '\r'){
+                continue;
+            }
+            dest[i] = ch;
+            i++;
+        }
+        dest[size] = 0;
     }
     
 }

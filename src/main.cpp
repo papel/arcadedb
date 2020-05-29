@@ -8,16 +8,11 @@
 
 
 int main(int argc, char* argv[]){
-    if (argc != 6){
+    if (argc != 5){
         fprintf(stderr, "Invalid input files. The correct arguments are:\n");
-        fprintf(stderr, " %s mamelist.xml fbalist.xml Catlist.ini Version.ini nplayers.ini\n", argv[0]);
+        fprintf(stderr, " %s mamelist.xml fbalist.xml catlist.ini nplayers.ini > output.sql\n", argv[0]);
         return -1;
     }
-    
-    //?
-    //size
-    //bios
-    //check crc
     
     try {
         SGameList games(50000);
@@ -34,10 +29,7 @@ int main(int argc, char* argv[]){
         read_genre(argv[3], &games);
         
         fprintf(stderr, "Reading: %s\n", argv[4]);
-        read_version(argv[4], &games);
-        
-        fprintf(stderr, "Reading: %s\n", argv[5]);
-        read_numplayers(argv[5], &games);
+        read_numplayers(argv[4], &games);
         
         fprintf(stderr, "Output: ...\n" );
         outp.output(stdout, &games);

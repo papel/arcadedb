@@ -1,4 +1,5 @@
 #include "SQLOutput.hpp"
+#include "Avulso.hpp"
 
 #include <stdio.h>
 #include <string.h>
@@ -51,7 +52,7 @@ static void getOrNull(char* dest, const char* src){
 static void print_game(FILE* output, Game& game){
     char name[110];
     escapeString(name, game.get_name());
-    char manufacturer[60];
+    char manufacturer[110];
     escapeString(manufacturer, game.get_manufacturer() );
     
     char parent[22];
@@ -63,16 +64,16 @@ static void print_game(FILE* output, Game& game){
 
     
     fprintf(output, 
-        "insert into roms values('%s', '%s', %s, '%s', %d, '%s', %d, '%s', %s, '%s', '%s', %s, '%s', %d, %d);\n",
+        "insert into roms values('%s', '%s', %s, '%s', %d, '%s', %llu, '%s', %s, '%s', '%s', %s, '%s', %d);\n",
         
         game.get_romname(),
         name,
         parent,
         game.get_board()->get_sourcefile(),
         
-        game.get_year(),//int
+        (int)game.get_year(),
         manufacturer,
-        game.get_size(),//int
+        game.get_size(),//uint64
         setBool( game.get_chd() != nullptr ),
         
         sample_parent,
@@ -81,8 +82,7 @@ static void print_game(FILE* output, Game& game){
         genre,
         
         setBool( game.ismature() ),
-        game.get_nplayers(),//int
-        game.get_version() //int
+        (int)game.get_nplayers()
     );
 }
 
@@ -94,9 +94,12 @@ void SQLOutput::output(FILE* output, GameList* games){
         Game& game = it->getNext();
         
         //Skip garbage
+        //Bios are separate because they aren't game 
         const char* genr = game.get_genre();
         if (genr != nullptr ){
-            if (strcmp( genr, "Fruit Machines" ) == 0 || strcmp( genr, "System / BIOS" ) == 0) continue;
+            if (Avulso::str_starts(genr, "MESS")){
+                continue;
+            }
         }
         
         print_game(output, game);

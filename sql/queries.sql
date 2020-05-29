@@ -99,9 +99,9 @@ and (
 )
 --BOARD
 and board not in (
---Good systems with alternative source (3D and does not work)
+--Good systems with alternate source (3D and does not work)
 'triforce', --Dolphin (Mario Kart GP 2)
-'naomi', --naomi + atomiswave (see list)
+'naomi', --naomi + atomiswave (DC emulator)
 
 'namcos11', --PS1
 'namcos12', --PS1 (Tekken, Soulcalibur - PS1)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "Machine.hpp"
 #include "Avulso.hpp"
 
@@ -9,13 +11,13 @@ class Game {
     char clone_of[20];
     Machine* board;
     short year;
-    char manufacturer[50];
-    int size;
+    char manufacturer[100];
+    uint64_t size;
     char chd_file[20];
     char sample_of[20];
     bool _works;
     bool _fba;
-    char genre[40];
+    char genre[100];
     bool mature;
     short nplayers;
     int version;
@@ -60,7 +62,7 @@ class Game {
     
     
     void set_manufacturer(const char* nam){
-        Avulso::strcop(manufacturer, nam, 50);
+        Avulso::strcop(manufacturer, nam, 100);
     }
     const char* get_manufacturer() const{
         return manufacturer;
@@ -104,7 +106,7 @@ class Game {
     }
     
     void set_genre(const char* nam){
-        Avulso::strcop(genre, nam, 40);
+        Avulso::strcop(genre, nam, 100);
     }
     const char* get_genre() const{
         if (genre[0] == 0) return nullptr;
@@ -118,10 +120,10 @@ class Game {
         return nplayers;
     }
     
-    void set_size(int y){
+    void set_size(uint64_t y){
         size = y;
     }
-    int get_size() const{
+    uint64_t get_size() const{
         return size;
     }
     void set_version(int y){

@@ -34,9 +34,6 @@ class Machine {
         int i;
         for (i=0; nam[i] != 0; i++);
         if (i < 2) return;
-        if (nam[i-2] == '.' && nam[i-1] == 'c' ){
-            i -= 2;
-        }
         Avulso::strcop(sourcefile, nam, (i>=20)? 20 : i+1 );
     }
     const char* get_sourcefile() const{

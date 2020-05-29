@@ -3,7 +3,7 @@
 #include "GameList.hpp"
 
 class SGameList : public GameList {
-    Game* gameList; //alfabetical order from mame instead of hash
+    Game* gameList; //alphabetical order instead of hash
     int quant;
     int limit;
     

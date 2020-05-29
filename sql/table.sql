@@ -6,16 +6,15 @@ create table roms (
     parent varchar(20), --romname
     board varchar(20),
     year integer,
-    manufacturer varchar(50),
+    manufacturer varchar(100),
     size integer,
     has_chd boolean,
     sample_set varchar(20), --romname
     works boolean default false,
     fba boolean default false,
-    genre varchar(40),
+    genre varchar(80),
     mature boolean,
-    nplayers integer,
-    version integer
+    nplayers integer
 );
 
 --View of boards
@@ -29,7 +28,6 @@ select
     min(case when year > 1950 then year end) as first_year,
     max(case when year > 1950 then year end) as last_year,
     100*cast(sum(case when works then 1 else 0 end) as float)/count(*) as working,
-    --bool_or(fba) as fba
     max(case when fba then 1 else 0 end) as fba
 from roms where parent is null
 group by board

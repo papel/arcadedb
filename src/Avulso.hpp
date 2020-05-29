@@ -22,8 +22,11 @@ namespace Avulso {
     }
     
     //String
-    void strcop(char* dest, const char* orig, int size);
+    void strcop(char* dest, const char* orig, size_t size);
+    bool str_starts(const char *str, const char *pre);
     
     //File
     void goto_after(FILE* arq, const char* str);
+    void read_until(FILE* arq, char* dest, size_t size, char stop);
+
 }

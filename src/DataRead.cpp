@@ -1,12 +1,17 @@
 #include "GameList.hpp"
 #include "MachineList.hpp"
 #include "Exception.hpp"
+#include "Avulso.hpp"
 
 #include <stdio.h>
 #include <string.h>
 
-static void read_file(const char* input, GameList* games, int md){
+void read_genre(const char* input, GameList* games){
     FILE* arq = fopen(input, "r");
+    if (arq == nullptr){
+        throw Exception("Failed to open file");
+    }
+    
     int nl = 0;
     while (nl < 6 && !feof(arq)){
         char ch = fgetc(arq);
@@ -19,8 +24,8 @@ static void read_file(const char* input, GameList* games, int md){
         if (feof(arq) || cha != '[')
             break;
         
-        char info[50];
-        for (int i=0; i<50; i++){
+        char info[100];
+        for (int i=0; i<100; i++){
             char ch = fgetc(arq);
             if (feof(arq) || ch == ']'){
                 info[i] = 0;
@@ -34,32 +39,37 @@ static void read_file(const char* input, GameList* games, int md){
             if (ch == '\n') break;
         } while (!feof(arq));
         
-        char rdata[50];
-        int ver = 0;
-        switch(md){
-          case 1:
-            strcpy(rdata, info);
-            for (int i=0; rdata[i] != 0; i++){
-                if (rdata[i] == '*'){
-                    ver = 1;
-                    rdata[i-1] = 0;
-                    break;
-                }
+        char rdata[100];
+        bool mature = false;
+
+        strcpy(rdata, info);
+        for (int i=0; rdata[i] != 0; i++){
+            if (rdata[i] == '*'){
+                mature = true;
+                rdata[i-1] = 0;
+                break;
             }
-            break;
-          case 2:
-            {
-                ver = ( (info[1]-'0')*100 + (info[2]-'0')*10 + (info[3]-'0')*1)*100;
-                if (info[4] != 0){
-                    ver += ( (info[5]-'0')*10 + (info[6]-'0')*1)*1;
-                }
-                sprintf(rdata, "%d", ver);
-                if (strcmp(rdata, "Fighter / 2.5D") == 0){
-                    strcpy(rdata, "Beat em up");
-                }
-            }
-            break;
         }
+        if (Avulso::str_starts(rdata, "Arcade: ")){
+            char* dest = rdata;
+            char* src = dest + strlen("Arcade: ");
+            do {
+                *dest = *src;
+                src++; dest++;
+            } while (*src != 0);
+        }
+        else {
+            strcpy(rdata, "MESS");
+        }
+        //Board Game, Tabletop
+        if (Avulso::str_starts(rdata, "Electromechanical") || Avulso::str_starts(rdata, "Utilities") || Avulso::str_starts(rdata, "System")){
+            strcpy(rdata, "MESS");
+        }
+        
+        if (strcmp(rdata, "Fighter / 2.5D") == 0){
+            strcpy(rdata, "Beat em up");
+        }
+
         
         
         //Each game
@@ -81,23 +91,13 @@ static void read_file(const char* input, GameList* games, int md){
             if (romname[0] == 0) //empty line
                 break;
             
-            switch(md){
-              case 1:
-                if (strlen(rdata) > 0){
-                    Game* game = games->get_game(romname);
-                    if (game != nullptr){
-                        game->set_genre(rdata);
-                        game->ismature(ver == 1);
-                    }
+            
+            if (strlen(rdata) > 0){
+                Game* game = games->get_game(romname);
+                if (game != nullptr){
+                    game->set_genre(rdata);
+                    game->ismature(mature);
                 }
-                break;
-              case 2:{
-                    Game* game = games->get_game(romname);
-                    if (game != nullptr){
-                        game->set_version(ver);
-                    }
-                }
-                break;
             }
             
         }
@@ -109,63 +109,37 @@ static void read_file(const char* input, GameList* games, int md){
 
 void read_numplayers(const char* input, GameList* games){
     FILE* arq = fopen(input, "r");
-    int nl = 0;
+    if (arq == nullptr){
+        throw Exception("Failed to open file");
+    }
     
     Avulso::goto_after(arq, "[NPlayers]");
     Avulso::goto_after(arq, "\n");
     
     while(true){
         char name[30];
-        char info[50];
-        
-        for (int i=0; true; i++){
-            char ch = fgetc(arq);
-            if (feof(arq) || ch == '='){
-                name[i] = 0;
-                break;
-            }
-            name[i] = ch;
-        }
-        
-        for (int i=0; true; i++){
-            char ch = fgetc(arq);
-            if (ch == '\r'){
-                info[i] = 0;
-                Avulso::goto_after(arq, "\n");
-                break;
-            }
-            if (feof(arq) || ch == '\n'){
-                info[i] = 0;
-                break;
-            }
-            info[i] = ch;
-        }
+        char info[100];
+
+        Avulso::read_until(arq, name, 30, '=');
+        Avulso::read_until(arq, info, 100, '\n');
         
         if (feof(arq))
             break;
         
-        
-        if (info[0] != '?'){
-            if (strncmp(info, "LaserDisc", 9) == 0 || strncmp(info, "BIOS", 4) == 0
-                || strncmp(info, "Pinball", 7) == 0 || strncmp(info, "Device", 6) == 0
-            ){
-                
+        if (info[0] >= '0' && info[0] <= '9'){
+            int nump = info[0] - '0';
+            if (nump == 1 || info[3] == 's'){
+            }
+            else if (info[3] == 'a'){
+                nump = -nump;
             }
             else {
-                int nump = info[0] - '0';
-                if (nump == 1 || info[3] == 's'){
-                }
-                else if (info[3] == 'a'){
-                    nump = -nump;
-                }
-                else {
-                    //throw Exception("Error: %s %s\n", name, info);
-                    throw Exception("Error in numplayers.");
-                }
-                Game* game = games->get_game(name);
-                if (game != nullptr){
-                    game->set_nplayers(nump);
-                }
+                //throw Exception("Error: %s %s\n", name, info);
+                throw Exception("Error in numplayers.");
+            }
+            Game* game = games->get_game(name);
+            if (game != nullptr){
+                game->set_nplayers(nump);
             }
         }
         
@@ -173,10 +147,3 @@ void read_numplayers(const char* input, GameList* games){
     fclose(arq);
 }
 
-
-void read_genre(const char* input, GameList* games){
-    read_file(input, games, 1);
-}
-void read_version(const char* input, GameList* games){
-    read_file(input, games, 2);
-}
